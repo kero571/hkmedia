@@ -61,30 +61,25 @@ export const FILTERS = [
   { id: "wedding", label: "الأفراح" },
 ];
 
-const reels = Array.from({ length: 7 }, (_, index) => ({
-  id: `reel-${index + 1}`,
+const reels = Array.from({ length: 7 }, (_, i) => ({
+  id: `reel-${i + 1}`,
   cat: "reels",
-  src: `/videos/reels/${index + 1}.mp4`,
-  title: `ريلز ${index + 1}`,
+  src: `/videos/reels/${i + 1}.mp4`,
+  cover: `/covers/reels/${i + 1}.jpg`,
+  title: `ريلز ${i + 1}`,
   label: "ريلز",
-  reels: true,
-  bg: "from-slate-900 via-slate-800 to-black",
-  cover: `/covers/reels/${index + 1}.jpg`,
 }));
 
-const weddings = Array.from({ length: 2 }, (_, index) => ({
-  id: `wedding-${index + 1}`,
+const weddings = Array.from({ length: 2 }, (_, i) => ({
+  id: `wedding-${i + 1}`,
   cat: "wedding",
-  src: `/videos/wedding/${index + 1}.mp4`,
-  title: `فرح ${index + 1}`,
+  src: `/videos/wedding/${i + 1}.mp4`,
+  cover: `/covers/wedding/${i + 1}.jpg`,
+  title: `فرح ${i + 1}`,
   label: "الأفراح",
-  reels: false,
-  bg: "from-stone-900 via-neutral-800 to-black",
-  cover: `/covers/wedding/${index + 1}.jpg`,
 }));
 
 export const WORKS = [...reels, ...weddings];
-
 export const PHOTOS = Array.from({ length: 34 }, (_, index) => ({
   id: `photo-${index + 1}`,
   src: `/photos/${index + 1}.webp`,
@@ -138,7 +133,19 @@ export const BULLETS = [
 ];
 
 export const SOCIALS = [
-  { icon: "youtube", label: "YouTube", href: "https://youtube.com/@hegazikhairy2028?si=42eRFnUP42mE14-S" },
-  { icon: "facebook", label: "Facebook", href: "https://www.facebook.com/share/1B8vAhUwfk/" },
-  { icon: "tiktok", label: "TikTok", href: "https://www.tiktok.com/@hegazik.moustafa?_r=1&_t=ZS-9AT5VKytohR" },
+  {
+    icon: "youtube",
+    label: "YouTube",
+    href: "https://youtube.com/@hegazikhairy2028?si=42eRFnUP42mE14-S",
+  },
+  {
+    icon: "facebook",
+    label: "Facebook",
+    href: "https://www.facebook.com/share/1B8vAhUwfk/",
+  },
+  {
+    icon: "tiktok",
+    label: "TikTok",
+    href: "https://www.tiktok.com/@hegazik.moustafa?_r=1&_t=ZS-9AT5VKytohR",
+  },
 ];
