@@ -1,144 +1,182 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useCallback, useMemo, useState, useTransition } from "react";
 import Image from "next/image";
-import Icon from "../ui/Icon";
-import SectionHeading from "../ui/SectionHeading";
+// عدّل المسار حسب مكان ملف الكونتنت عندك
 import { FILTERS, WORKS } from "@/data/content";
 
-const INITIAL_COUNT = 4;
+/* ---------- Loader ---------- */
+function Spinner({ className = "" }) {
+  return (
+    <span
+      role="status"
+      aria-label="جاري التحميل"
+      className={`block h-10 w-10 animate-spin rounded-full border-4 border-white/30 border-t-[#d9a62e] ${className}`}
+    />
+  );
+}
 
-export default function Works() {
-  const [filter, setFilter] = useState("all");
-  const [playingId, setPlayingId] = useState(null);
-  const [failedId, setFailedId] = useState(null);
-  const [showAll, setShowAll] = useState(false);
-
-  const list = filter === "all" ? WORKS : WORKS.filter((w) => w.cat === filter);
-  const visibleWorks = showAll ? list : list.slice(0, INITIAL_COUNT);
-
-  const handleFilterChange = (id) => {
-    setFilter(id);
-    setShowAll(false);
-    setPlayingId(null);
-    setFailedId(null);
-  };
-
-  const toggleShowAll = () => {
-    setShowAll((prev) => !prev);
-    setPlayingId(null);
-  };
-
-  const play = (id) => {
-    setFailedId(null);
-    setPlayingId(id);
-  };
+/* ---------- Card ---------- */
+const WorkCard = memo(function WorkCard({ item, isActive, onPlay, onEnd }) {
+  const [imgLoaded, setImgLoaded] = useState(false);
+  const [imgError, setImgError] = useState(false);
+  const [buffering, setBuffering] = useState(true);
 
   return (
-    <section id="works" aria-labelledby="works-title" className="defer bg-sand/70">
-      <div className="section container-x">
-        <SectionHeading
-          id="works-title"
-          eyebrow="02 // أعمالنا"
-          title={
-            <>
-              أبرز <span className="text-gold">أعمالنا</span>
-            </>
-          }
-        />
+    <article
+      // aspect-ratio ثابت = صفر CLS
+      className="group relative aspect-[4/5] w-full overflow-hidden rounded-3xl bg-[#d9cbb3] shadow-lg shadow-black/10"
+    >
+      {/* Skeleton loader لحد ما الكوفر يحمّل */}
+      {!imgLoaded && !imgError && (
+        <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-[#d9cbb3] via-[#e8dcc6] to-[#d9cbb3]" />
+      )}
 
-        <div
-          aria-label="تصفية الأعمال"
-          className="no-scrollbar -mx-5 mb-8 flex gap-2.5 overflow-x-auto px-5 sm:mx-0 sm:flex-wrap sm:justify-center sm:overflow-visible sm:px-0"
+      {isActive ? (
+        <>
+          <video
+            className="absolute inset-0 h-full w-full bg-black object-cover"
+            src={item.src}
+            poster={item.cover}
+            autoPlay
+            controls
+            playsInline
+            preload="auto"
+            onCanPlay={() => setBuffering(false)}
+            onPlaying={() => setBuffering(false)}
+            onWaiting={() => setBuffering(true)}
+            onEnded={onEnd}
+            onError={onEnd}
+          />
+          {buffering && (
+            <div className="pointer-events-none absolute inset-0 grid place-items-center bg-black/30">
+              <Spinner />
+            </div>
+          )}
+        </>
+      ) : (
+        <button
+          type="button"
+          onClick={() => onPlay(item.id)}
+          aria-label={`تشغيل ${item.title}`}
+          className="absolute inset-0 block h-full w-full cursor-pointer focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-[-4px] focus-visible:outline-[#d9a62e]"
         >
-          {FILTERS.map((f) => (
-            <button
-              key={f.id}
-              type="button"
-              aria-pressed={filter === f.id}
-              onClick={() => handleFilterChange(f.id)}
-              className={`shrink-0 rounded-full px-6 py-2.5 text-sm font-bold transition ${
-                filter === f.id
-                  ? "bg-navy text-white"
-                  : "bg-paper text-ink/75 hover:text-gold"
+          {!imgError && (
+            <Image
+              src={item.cover}
+              alt={item.title}
+              fill
+              sizes="(min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
+              quality={70}
+              className={`object-cover transition-opacity duration-300 ${
+                imgLoaded ? "opacity-100" : "opacity-0"
               }`}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
+              onLoad={() => setImgLoaded(true)}
+              onError={() => setImgError(true)}
+            />
+          )}
 
-        <ul className="grid items-start gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
-          {visibleWorks.map((w) => (
-            <li key={w.id} className="min-w-0">
-              <div
-                className={`relative overflow-hidden rounded-3xl bg-black shadow-md ${
-                  w.cat === "wedding" ? "aspect-video" : "aspect-[9/16]"
+          {/* تدرج خفيف عشان النص يبان */}
+          <span className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/60 to-transparent" />
+
+          {/* زرار التشغيل */}
+          <span className="absolute left-1/2 top-1/2 grid h-14 w-14 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-[#d9a62e] shadow-xl transition-transform duration-200 group-hover:scale-110 sm:h-16 sm:w-16">
+            <svg viewBox="0 0 24 24" className="h-6 w-6 translate-x-[1px] fill-[#1f2430]" aria-hidden="true">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </span>
+
+          <span className="absolute bottom-4 start-4 text-sm font-bold text-white drop-shadow">
+            {item.title}
+          </span>
+          <span className="absolute bottom-4 end-4 rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-[#1f2430]">
+            {item.label}
+          </span>
+        </button>
+      )}
+    </article>
+  );
+});
+
+/* ---------- Section ---------- */
+export default function Works() {
+  const [filter, setFilter] = useState("all");
+  const [activeId, setActiveId] = useState(null);
+  const [isPending, startTransition] = useTransition();
+
+  const items = useMemo(
+    () => (filter === "all" ? WORKS : WORKS.filter((w) => w.cat === filter)),
+    [filter]
+  );
+
+  // INP: الفلتر بيتعمل كـ transition عشان الضغطة ترد فوراً
+  const onFilter = useCallback((id) => {
+    setActiveId(null);
+    startTransition(() => setFilter(id));
+  }, []);
+
+  const onPlay = useCallback((id) => setActiveId(id), []); // فيديو واحد بس شغال
+  const onEnd = useCallback(() => setActiveId(null), []);
+
+  return (
+    <section
+      id="works"
+      className="scroll-mt-20 bg-[#efe6d8] px-4 py-16 [contain-intrinsic-size:auto_900px] [content-visibility:auto] sm:px-6 sm:py-20 lg:px-8 lg:py-24"
+    >
+      <div className="mx-auto max-w-6xl">
+        {/* Header */}
+        <header className="text-center">
+          <p className="text-xs font-bold tracking-wide text-[#c8962a]">
+            02 // أعمالنا
+          </p>
+          <h2 className="mt-3 text-3xl font-extrabold text-[#1f2430] sm:text-4xl lg:text-5xl">
+            أبرز <span className="text-[#d9a62e]">أعمالنا</span>
+          </h2>
+        </header>
+
+        {/* Filters */}
+        <div
+          role="group"
+          aria-label="تصفية الأعمال"
+          className="mt-8 flex flex-wrap items-center justify-center gap-3 sm:mt-10"
+        >
+          {FILTERS.map((f) => {
+            const selected = filter === f.id;
+            return (
+              <button
+                key={f.id}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => onFilter(f.id)}
+                className={`min-h-11 rounded-full px-6 text-sm font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d9a62e] ${
+                  selected
+                    ? "bg-[#1f2430] text-white"
+                    : "bg-white text-[#1f2430] hover:bg-[#f8f3ea]"
                 }`}
               >
-                {playingId === w.id ? (
-                  failedId === w.id ? (
-                    <p className="absolute inset-0 grid place-items-center px-4 text-center text-sm text-white">
-                      تعذر تشغيل الفيديو، حاول مرة أخرى لاحقاً
-                    </p>
-                  ) : (
-                    <video
-                      src={w.src}
-                      poster={w.cover}
-                      controls
-                      autoPlay
-                      playsInline
-                      preload="metadata"
-                      onError={() => setFailedId(w.id)}
-                      className="absolute inset-0 h-full w-full object-contain"
-                    />
-                  )
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => play(w.id)}
-                    aria-label={`تشغيل الفيديو: ${w.title}`}
-                    className="group absolute inset-0 block w-full text-start"
-                  >
-                    <Image
-                      src={w.cover}
-                      alt=""
-                      fill
-                      sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 30vw"
-                      className="object-cover transition duration-500 group-hover:scale-105"
-                    />
-                    <span className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
-                    <span className="absolute left-1/2 top-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-gold text-navy animate-ring sm:h-16 sm:w-16">
-                      <Icon name="play" className="h-6 w-6" />
-                    </span>
-                    <span className="absolute inset-x-0 bottom-0 p-4 sm:p-5" dir="rtl">
-                      <span className="block text-xs font-bold text-gold">{w.label}</span>
-                      <span className="mt-1 block truncate text-base font-extrabold text-white sm:text-lg">
-                        {w.title}
-                      </span>
-                    </span>
-                  </button>
-                )}
-              </div>
-            </li>
-          ))}
-        </ul>
+                {f.label}
+              </button>
+            );
+          })}
+        </div>
 
-        {list.length > INITIAL_COUNT && (
-          <div className="mt-10 text-center">
-            <button
-              type="button"
-              onClick={toggleShowAll}
-              aria-expanded={showAll}
-              className="inline-flex items-center gap-2 rounded-full border border-ink/40 px-8 py-3 text-sm font-bold transition hover:border-gold hover:text-gold"
-            >
-              {showAll ? "عرض أقل" : "عرض المزيد"}
-              <span className={`transition-transform ${showAll ? "rotate-90" : "-rotate-90"}`}>
-                <Icon name="arrowLeft" className="h-4 w-4" />
-              </span>
-            </button>
-          </div>
-        )}
+        {/* Grid */}
+        <div
+          aria-busy={isPending}
+          className={`mt-10 grid grid-cols-1 gap-5 transition-opacity duration-150 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 ${
+            isPending ? "opacity-60" : "opacity-100"
+          }`}
+        >
+          {items.map((item) => (
+            <WorkCard
+              key={item.id}
+              item={item}
+              isActive={activeId === item.id}
+              onPlay={onPlay}
+              onEnd={onEnd}
+            />
+          ))}
+        </div>
       </div>
     </section>
   );
